@@ -1,0 +1,39 @@
+services:
+  api:
+    build: .
+    container_name: caching_service
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: python /usr/local/bin/healthcheck.py
+      interval: 60s
+      start_interval: 1s
+      start_period: 10s
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    container_name: caching_service_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      start_period: 10s
+      timeout: 5s
+      retries: 5
+      interval: 10s
+      start_interval: 1s
+
+volumes:
+  postgres_data:

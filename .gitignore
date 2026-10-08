@@ -1,0 +1,26 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+.env
+
+# PyCharm / JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+cmake-build-*/
+
+# VS Code
+.vscode/
+*.code-workspace
+.history/
+*.vsix
