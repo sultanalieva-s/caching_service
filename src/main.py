@@ -1,16 +1,40 @@
-# This is a sample Python script.
+# src/main.py
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+from src.resource_access.database import engine
+from src.api.api_v1.endpoints import router as payload_router
+from src.services.payload_service import PayloadNotFoundError
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    yield
+    # Close pooled connections cleanly on shutdown. Schema is owned by Alembic,
+    # so there is nothing to create on startup.
+    await engine.dispose()
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+app = FastAPI(
+    title="Caching Service",
+    version="0.1.0",
+    description="Generates interleaved, transformed payloads and caches transformer results.",
+    lifespan=lifespan,
+)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+@app.exception_handler(PayloadNotFoundError)
+async def payload_not_found_handler(request: Request, exc: PayloadNotFoundError) -> JSONResponse:
+    # Translating here keeps HTTP concerns out of the service layer.
+    return JSONResponse(status_code=404, content={"detail": "Payload not found"})
+
+
+@app.get("/health", include_in_schema=False)
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+app.include_router(payload_router, prefix="/payload", tags=["payload"])
