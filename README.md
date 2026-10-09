@@ -166,11 +166,3 @@ uv run pytest
 
 - **Unit tests** cover the service logic: interleaving, identifier generation, and the caching behavior (the transformer is called only for deduplicated cache misses, and never when everything is cached). The database session and the transformer are mocked.
 - **API tests** cover the HTTP contract: routing, validation (`422`), response shapes, and the `404` handler. The service is replaced through FastAPI's `dependency_overrides`, so these tests do not touch the database.
-
-## Known shortcuts
-
-- **No integration tests against a real database yet.** Because the session is mocked, the SQL itself (the `IN` lookup and the `ON CONFLICT` upserts) is not covered by automated tests. The natural next step is integration tests against a throwaway PostgreSQL (e.g. `testcontainers`).
-- **`IN (...)` size.** The cache lookup sends one bound parameter per unique string. A request with tens of thousands of unique strings could hit PostgreSQL's limit of 65,535 parameters. Such requests would need chunking.
-- **Transformer is a stand-in.** `PayloadService.transform` upper-cases the strings to simulate the external service. It is assumed to be deterministic, which is what makes the upsert race safe.
-- **Credentials in compose and `.env.example`** are development defaults, not for production.
-- **No cache eviction.** Cached results are kept indefinitely.
